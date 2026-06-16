@@ -80,6 +80,11 @@ input:focus, select:focus {
     border-color: var(--accent);
 }
 
+input:disabled, select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .coord-inputs {
     display: flex;
     gap: 8px;
@@ -168,7 +173,7 @@ canvas {
     left: 0;
 }
 
-/* POI Icons over Canvas */
+/* Marker Styles */
 .poi {
     position: absolute;
     transform: translate(-50%, -50%);
@@ -183,7 +188,7 @@ canvas {
     filter: drop-shadow(0px 2px 5px rgba(0,0,0,0.5));
 }
 
-/* Coordinate Tooltip Popup */
+/* Coordinate Popup Card */
 .poi-tooltip {
     position: absolute;
     bottom: 120%;
@@ -191,22 +196,25 @@ canvas {
     transform: translateX(-50%);
     background: rgba(18, 19, 26, 0.95);
     border: 1px solid var(--accent);
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 4px;
     white-space: nowrap;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: #fff;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s;
+    transition: opacity 0.15s ease-in-out;
     box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    text-align: center;
 }
 
-.poi:hover .poi-tooltip {
+/* Visible status applied by Javascript click toggle */
+.poi.active .poi-tooltip {
     opacity: 1;
+    pointer-events: auto;
 }
 
-/* Interactive Map Zoom Overlays */
+/* Interactive Map Overlays */
 .controls-overlay {
     position: absolute;
     bottom: 24px;
