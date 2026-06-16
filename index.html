@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft End Portal Finder</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Controls -->
+        <header class="sidebar">
+            <h1>🔮 End Portal Finder</h1>
+            
+            <form id="finder-form">
+                <div class="input-group">
+                    <label for="seed">World Seed</label>
+                    <input type="text" id="seed" placeholder="Enter world seed..." required>
+                </div>
+
+                <div class="input-group">
+                    <label for="version">Minecraft Version</label>
+                    <select id="version">
+                        <option value="1.21">Java 1.21.x (1.21.11 - 1.26.2)</option>
+                    </select>
+                </div>
+
+                <div class="coordinates-section">
+                    <h3>📍 Your Location</h3>
+                    <div class="coord-inputs">
+                        <input type="number" id="custom-x" placeholder="X">
+                        <input type="number" id="custom-z" placeholder="Z">
+                    </div>
+                    <button type="button" id="btn-teleport" class="secondary-btn">Mark My Location</button>
+                </div>
+
+                <button type="submit" class="primary-btn">Locate Portals</button>
+            </form>
+
+            <div id="info-panel" class="info-panel hidden">
+                <h3>System Status</h3>
+                <p id="spawn-info">Spawn Point: X: 0, Z: 0</p>
+                <p class="note">Click any Eye icon on the map to reveal exact coordinates.</p>
+            </div>
+        </header>
+
+        <!-- Map Canvas Viewport -->
+        <main class="map-viewport">
+            <div class="map-wrapper">
+                <canvas id="mapCanvas"></canvas>
+                <div id="poi-container"></div>
+            </div>
+            <div class="controls-overlay">
+                <button id="zoom-in">➕</button>
+                <button id="zoom-out">➖</button>
+                <button id="recenter">🎯</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
