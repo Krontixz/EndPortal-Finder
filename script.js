@@ -1,22 +1,21 @@
-// Map State Parameters
-let scale = 0.15; 
+// Map View State variables
+let scale = 0.04; 
 let offsetX = window.innerWidth / 2 - 160; 
 let offsetY = window.innerHeight / 2;
 let isDragging = false;
 let startX, startY;
 
-// Data Storage
+// Storage Data Structure
 let strongholds = [];
 let userLocation = null;
-const spawnPoint = { x: 0, z: 0 };
 
-// DOM Selectors
+// Select Dom Elements
 const canvas = document.getElementById('mapCanvas');
 const ctx = canvas.getContext('2d');
 const poiContainer = document.getElementById('poi-container');
 const form = document.getElementById('finder-form');
 
-// Initialize Canvas Sizing
+// Re-adjust size mapping elements
 function resizeCanvas() {
     canvas.width = canvas.parentElement.clientWidth;
     canvas.height = canvas.parentElement.clientHeight;
@@ -24,8 +23,7 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 
-// Stronghold Generation Math Ring Settings (Minecraft Java 1.9+)
-// Strongholds generate in 8 concentric rings centered around X:0, Z:0
+// Stronghold Generation Ring Metadata constraints for modern Minecraft (1.9 through 26.2)
 const ringRules = [
     { count: 3, minRad: 1280, maxRad: 2816 },
     { count: 6, minRad: 4352, maxRad: 5888 },
@@ -37,7 +35,7 @@ const ringRules = [
     { count: 10, minRad: 22784, maxRad: 24320 }
 ];
 
-// Simple Seed Hash Function to vary angles predictably per seed
+// Seed Hashing logic to shift angles safely across infinite unique worlds
 function getSeedModifier(seedStr) {
     let hash = 0;
     for (let i = 0; i < seedStr.length; i++) {
@@ -54,9 +52,9 @@ function generateStrongholds(seed) {
         const avgRadius = (ring.minRad + ring.maxRad) / 2;
         
         for (let i = 0; i < ring.count; i++) {
-            // Distribute strongholds evenly in a circle layout, modified slightly by seed hash
+            // Distribute strongholds evenly inside each concentric geometric circle perimeter
             const baseAngle = (2 * Math.PI * i) / ring.count;
-            const variation = (seedMod * (ringIdx + 1) * 0.005);
+            const variation = (seedMod * (ringIdx + 1) * 0.0075);
             const angle = baseAngle + variation;
             
             const x = Math.round(avgRadius * Math.cos(angle));
@@ -67,44 +65,38 @@ function generateStrongholds(seed) {
     });
 }
 
-// Render dynamic map grid lines and components
+// Canvas Core Paint Brush Render Logic
 function drawMap() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw Background Grid Layout
+    // Grid Lines Configuration
     ctx.strokeStyle = '#1e2230';
     ctx.lineWidth = 1;
-    const gridSize = 500 * scale;
+    const gridSize = 1000 * scale; 
     
-    // Vertical Grid Lines
     let startGridX = offsetX % gridSize;
     for (let x = startGridX; x < canvas.width; x += gridSize) {
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
+        ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
     }
     
-    // Horizontal Grid Lines
     let startGridY = offsetY % gridSize;
     for (let y = startGridY; y < canvas.height; y += gridSize) {
         ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
+        ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
     }
 
-    // Draw Ring Boundaries visually
+    // Draw visual generation boundary circles matching rules
     ringRules.forEach(ring => {
         ctx.beginPath();
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.04)';
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.03)';
         ctx.lineWidth = (ring.maxRad - ring.minRad) * scale;
         const radius = ((ring.minRad + ring.maxRad) / 2) * scale;
         ctx.arc(offsetX, offsetY, radius, 0, 2 * Math.PI);
         ctx.stroke();
     });
 
-    // Draw Axis lines intersecting spawn
+    // Main World Center Intersection Lines
     ctx.strokeStyle = '#2d3142';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -115,36 +107,48 @@ function drawMap() {
     updateDOMMarkers();
 }
 
-// Map real block coordinates directly to screen pixels
+// Translate world scale values straight to pixels screen space
 function getScreenCoords(worldX, worldZ) {
     return {
         x: offsetX + (worldX * scale),
-        y: offsetY + (worldZ * scale) // Z in minecraft acts as Y coordinate axis layout
+        y: offsetY + (worldZ * scale)
     };
 }
 
-// Place UI interaction overlay objects exactly over the canvas
+// Create DOM overlay markers to allow clean pointer clicking
 function updateDOMMarkers() {
     poiContainer.innerHTML = '';
 
-    // Render Portal Eyes
     strongholds.forEach((sh, index) => {
         const pos = getScreenCoords(sh.x, sh.z);
         if (pos.x >= 0 && pos.x <= canvas.width && pos.y >= 0 && pos.y <= canvas.height) {
             const div = document.createElement('div');
-            div.className = 'poi eye-poi';
+            div.className = 'poi';
             div.style.left = `${pos.x}px`;
             div.style.top = `${pos.y}px`;
             
             div.innerHTML = `
-                <img src="assets/eye.png" alt="Portal">
-                <div class="poi-tooltip">Portal #${index+1}<br>X: ${sh.x} | Y: ~ | Z: ${sh.z}</div>
+                <img src="assets/eye.png" alt="Portal Edge Target">
+                <div class="poi-tooltip">
+                    <strong>Stronghold #${index + 1}</strong><br>
+                    X: ${sh.x}<br>
+                    Y: ~ (Check Caves)<br>
+                    Z: ${sh.z}
+                </div>
             `;
+            
+            // Toggle active status card display layer on click event explicitly
+            div.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.poi').forEach(p => { if(p !== div) p.classList.remove('active'); });
+                div.classList.toggle('active');
+            });
+
             poiContainer.appendChild(div);
         }
     });
 
-    // Render User Custom Locator Pin
+    // Custom imported coordinates marker
     if (userLocation) {
         const pos = getScreenCoords(userLocation.x, userLocation.z);
         if (pos.x >= 0 && pos.x <= canvas.width && pos.y >= 0 && pos.y <= canvas.height) {
@@ -154,15 +158,31 @@ function updateDOMMarkers() {
             div.style.top = `${pos.y}px`;
             
             div.innerHTML = `
-                <img src="assets/locator.png" alt="You">
-                <div class="poi-tooltip">Your Location<br>X: ${userLocation.x} | Z: ${userLocation.z}</div>
+                <img src="assets/locator.png" alt="Player Pin Location">
+                <div class="poi-tooltip">
+                    <strong>Your Location</strong><br>
+                    X: ${userLocation.x}<br>
+                    Z: ${userLocation.z}
+                </div>
             `;
+
+            div.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.poi').forEach(p => p.classList.remove('active'));
+                div.classList.add('active');
+            });
+
             poiContainer.appendChild(div);
         }
     }
 }
 
-// Dragging and Panning Engine Logic
+// Global window event listener to clear tooltip popup selections safely
+window.addEventListener('click', () => {
+    document.querySelectorAll('.poi').forEach(p => p.classList.remove('active'));
+});
+
+// Drag and drop interface pan tracking events configuration
 canvas.addEventListener('mousedown', (e) => {
     isDragging = true;
     startX = e.clientX - offsetX;
@@ -178,14 +198,13 @@ window.addEventListener('mousemove', (e) => {
 
 window.addEventListener('mouseup', () => isDragging = false);
 
-// Zoom Functions
+// Scale modification steps
 function adjustZoom(factor) {
-    const oldScale = scale;
-    scale = Math.max(0.01, Math.min(2, scale * factor));
+    scale = Math.max(0.005, Math.min(0.5, scale * factor));
     drawMap();
 }
 
-document.getElementById('zoom-in').addEventListener('click', () => adjustZoom(1.3));
+document.getElementById('zoom-in').addEventListener('click', () => adjustZoom(1.4));
 document.getElementById('zoom-out').addEventListener('click', () => adjustZoom(0.7));
 document.getElementById('recenter').addEventListener('click', () => {
     offsetX = canvas.width / 2;
@@ -201,7 +220,6 @@ form.addEventListener('submit', (e) => {
     generateStrongholds(seedInput);
     document.getElementById('info-panel').classList.remove('hidden');
     
-    // Trigger reset center alignment target maps automatically
     offsetX = canvas.width / 2;
     offsetY = canvas.height / 2;
     drawMap();
@@ -213,12 +231,11 @@ document.getElementById('btn-teleport').addEventListener('click', () => {
     
     if (!isNaN(x) && !isNaN(z)) {
         userLocation = { x, z };
-        // Instantly Pan to User Marker pin 
         offsetX = canvas.width / 2 - (x * scale);
         offsetY = canvas.height / 2 - (z * scale);
         drawMap();
     }
 });
 
-// Setup Initialization
+// Run Setup Loop Initializer on Window Draw
 resizeCanvas();
